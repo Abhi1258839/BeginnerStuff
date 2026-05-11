@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat with {{ other.full_name }} | LinkedIn</title>
+    <style>
+        :root {
+            --bg: #f4f7fb;
+            --surface: #ffffff;
+            --accent: #0a66c2;
+            --muted: #586776;
+            --border: #d8e2ef;
+            --radius: 20px;
+            --shadow: 0 20px 45px rgba(12, 53, 111, 0.08);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #eef3f9 0%, #f7fbff 100%);
+            color: #10203f;
+        }
+        .page-shell {
+            width: min(960px, 100%);
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 22px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+        .brand {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 1.15rem;
+        }
+        .chat-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            box-shadow: var(--shadow);
+        }
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .chat-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        .message-list {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 24px;
+            max-height: 520px;
+            overflow-y: auto;
+        }
+        .message {
+            max-width: 75%;
+            padding: 18px;
+            border-radius: 22px;
+            background: #f1f5fb;
+            border: 1px solid #d8e2ef;
+            line-height: 1.6;
+            position: relative;
+        }
+        .message.from-me {
+            margin-left: auto;
+            background: #0a66c2;
+            color: white;
+            border-color: rgba(10,102,194,0.25);
+        }
+        .message-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+        .send-form textarea {
+            width: 100%;
+            min-height: 120px;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 16px;
+            font-size: 1rem;
+            resize: vertical;
+        }
+        .send-form button {
+            margin-top: 12px;
+            border: none;
+            border-radius: 999px;
+            padding: 14px 24px;
+            background: var(--accent);
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .button-secondary {
+            background: rgba(10, 102, 194, 0.08);
+            color: var(--accent);
+            border: none;
+            border-radius: 999px;
+            padding: 12px 18px;
+            text-decoration: none;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+        <div class="topbar">
+            <div class="brand">LinkedIn Chat</div>
+            <div>
+                <a class="button-secondary" href="/dashboard">Back to dashboard</a>
+                <a class="button-secondary" href="/profile?email={{ other.email }}">View profile</a>
+            </div>
+        </div>
+        <div class="chat-panel">
+            <div class="chat-header">
+                <div>
+                    <h1>Chat with {{ other.full_name }}</h1>
+                    <p style="margin:4px 0 0; color: var(--muted);">{{ other.role }} • {{ other.company }}</p>
+                </div>
+            </div>
+            <div class="message-list">
+                {% for message in messages %}
+                    <div class="message{% if message.sender_email == user.email %} from-me{% endif %}">
+                        {{ message.message }}
+                        <div class="message-meta">
+                            <span>{{ 'You' if message.sender_email == user.email else other.full_name }}</span>
+                            <span>{{ message.created_at }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+                {% if not messages %}
+                    <div class="message">No messages yet. Send a message to start the conversation.</div>
+                {% endif %}
+            </div>
+            <form class="send-form" method="post" action="/send-message">
+                <input type="hidden" name="recipient_email" value="{{ other.email }}">
+                <textarea name="message" placeholder="Write your message here..."></textarea>
+                <button type="submit">Send message</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

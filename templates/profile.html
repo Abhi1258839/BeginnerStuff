@@ -153,6 +153,15 @@
                 <div>
                     <h1 class="profile-name">{{ user.full_name }}</h1>
                     <p class="profile-role">{{ user.role }} at {{ user.company }}</p>
+                    {% if not is_self %}
+                        <div class="button-row" style="margin-top:18px; gap:10px;">
+                            <a class="button-secondary" href="/chat/{{ user.email }}">💬 Chat</a>
+                            <form method="post" action="/friend-request" style="display:inline-block; margin:0;">
+                                <input type="hidden" name="target_email" value="{{ user.email }}">
+                                <button type="submit" class="button-secondary">➕ Add friend</button>
+                            </form>
+                        </div>
+                    {% endif %}
                 </div>
             </section>
             <section class="details-card">

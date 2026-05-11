@@ -315,6 +315,34 @@
                     </div>
                 </section>
 
+                <section class="company-card">
+                    <h2 class="section-title">People you should meet</h2>
+                    {% if recommended_users %}
+                        <div class="company-list">
+                            {% for suggestion in recommended_users %}
+                                <div class="company-item">
+                                    <strong>{{ suggestion.full_name }}</strong>
+                                    <span>{{ suggestion.role }} • {{ suggestion.company }}</span>
+                                    <div class="button-row" style="margin-top:10px; gap:10px;">
+                                        <a class="button-secondary" href="/profile?email={{ suggestion.email }}">👤 Profile</a>
+                                        <a class="button-secondary" href="/chat/{{ suggestion.email }}">💬 Chat</a>
+                                        {% if suggestion.email not in connected_emails %}
+                                            <form method="post" action="/friend-request" style="display:inline-block; margin:0;">
+                                                <input type="hidden" name="target_email" value="{{ suggestion.email }}">
+                                                <button type="submit" class="button-secondary">➕ Add friend</button>
+                                            </form>
+                                        {% else %}
+                                            <span style="color: var(--muted); font-weight:700;">Connected</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">We’ll suggest the best people for your network once you add companies and connections.</div>
+                    {% endif %}
+                </section>
+
                 {% if query %}
                     <section class="search-card">
                         <h2 class="section-title">Search results for “{{ query }}”</h2>
@@ -325,11 +353,21 @@
                                         <strong>{{ profile.full_name }}</strong>
                                         <span>{{ profile.role }} • {{ profile.company }}</span>
                                         <span>{{ profile.email }}</span>
-                                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
-                                            {% if user.role == 'Founder' and profile.email != user.email %}
+                                        <div class="button-row" style="margin-top:12px; gap:10px; flex-wrap:wrap;">
+                                            <a class="button-secondary" href="/profile?email={{ profile.email }}">👤 Profile</a>
+                                            <a class="button-secondary" href="/chat/{{ profile.email }}">💬 Chat</a>
+                                            {% if profile.email not in connected_emails and profile.email != user.email %}
+                                                <form method="post" action="/friend-request" style="display:inline-block; margin:0;">
+                                                    <input type="hidden" name="target_email" value="{{ profile.email }}">
+                                                    <button type="submit" class="button-secondary">➕ Add friend</button>
+                                                </form>
+                                            {% elif profile.email != user.email %}
+                                                <span style="color: var(--muted); font-weight:700;">Connected</span>
+                                            {% endif %}
+                                            {% if user.role == 'Founder' and profile.email != user.email and profile.company != user.company %}
                                                 <button class="button-primary request-button" data-email="{{ profile.email }}" data-company-id="{{ user.company_id|default('') }}">Send hiring request</button>
-                                            {% elif profile.role == 'Founder' and profile.email != user.email and user.email != profile.email %}
-                                                <button class="button-secondary request-button" data-email="{{ profile.email }}" data-company-id="{{ profile.company_id|default('') }}">Request job</button>
+                                            {% elif profile.role == 'Founder' and profile.email != user.email and user.company != profile.company %}
+                                                <button class="button-primary request-button" data-email="{{ profile.email }}" data-company-id="{{ profile.company_id|default('') }}">Request job</button>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -372,6 +410,34 @@
                             {% endif %}
                         </div>
                     </section>
+
+                    <section class="company-card">
+                        <h2 class="section-title">Open role promotions</h2>
+                        {% if promotions %}
+                            <div class="company-list">
+                                {% for promotion in promotions %}
+                                    <div class="company-item">
+                                        <strong>{{ promotion.role_title }} • {{ promotion.role_level }}</strong>
+                                        <span>{{ promotion.company_name }}</span>
+                                        <span>{{ promotion.description }}</span>
+                                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+                                            <a class="button-secondary" href="/company/{{ promotion.company_id }}">View company</a>
+                                            {% if user.company != promotion.company_name %}
+                                                <form method="post" action="/apply-promotion" style="display:inline-block; margin:0;">
+                                                    <input type="hidden" name="promotion_id" value="{{ promotion.id }}">
+                                                    <button type="submit" class="button-primary">Apply</button>
+                                                </form>
+                                            {% else %}
+                                                <span style="color: var(--muted);">Already part of this company</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state">No open role promotions yet. Founders can post new roles from their company page.</div>
+                        {% endif %}
+                    </section>
                 {% endif %}
             </div>
 
@@ -397,6 +463,9 @@
         <input type="hidden" name="role_title" id="request-role">
         <input type="hidden" name="level" id="request-level">
         <input type="hidden" name="message" id="request-message">
+    </form>
+    <form id="friend-request-form" method="post" action="/friend-request" style="display:none;">
+        <input type="hidden" name="target_email" id="friend-email">
     </form>
     <script>
         document.querySelectorAll('.request-button').forEach(function(button) {

@@ -22,10 +22,16 @@ def init_db():
         'full_name TEXT NOT NULL, '
         'email TEXT NOT NULL UNIQUE, '
         'password TEXT NOT NULL, '
-        'company TEXT NOT NULL, '
-        'role TEXT NOT NULL'
+        'company TEXT NOT NULL DEFAULT "Unemployed", '
+        'role TEXT NOT NULL DEFAULT "Professional"'
         ')'
     )
+    existing_columns = [row['name'] for row in conn.execute("PRAGMA table_info(users)").fetchall()]
+    if 'company' not in existing_columns:
+        conn.execute("ALTER TABLE users ADD COLUMN company TEXT NOT NULL DEFAULT 'Unemployed'")
+    if 'role' not in existing_columns:
+        conn.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'Professional'")
+
     conn.execute(
         'CREATE TABLE IF NOT EXISTS companies ('
         'id INTEGER PRIMARY KEY AUTOINCREMENT, '
@@ -66,6 +72,47 @@ def init_db():
         'status TEXT NOT NULL, '
         'created_at TEXT NOT NULL, '
         'FOREIGN KEY(company_id) REFERENCES companies(id)'
+        ')'
+    )
+    conn.execute(
+        'CREATE TABLE IF NOT EXISTS job_promotions ('
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+        'company_id INTEGER NOT NULL, '
+        'role_id INTEGER NOT NULL, '
+        'description TEXT NOT NULL, '
+        'is_open INTEGER NOT NULL DEFAULT 1, '
+        'created_at TEXT NOT NULL, '
+        'FOREIGN KEY(company_id) REFERENCES companies(id), '
+        'FOREIGN KEY(role_id) REFERENCES company_roles(id)'
+        ')'
+    )
+    conn.execute(
+        'CREATE TABLE IF NOT EXISTS job_applications ('
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+        'promotion_id INTEGER NOT NULL, '
+        'applicant_email TEXT NOT NULL, '
+        'status TEXT NOT NULL, '
+        'created_at TEXT NOT NULL, '
+        'updated_at TEXT NOT NULL, '
+        'FOREIGN KEY(promotion_id) REFERENCES job_promotions(id)'
+        ')'
+    )
+    conn.execute(
+        'CREATE TABLE IF NOT EXISTS connections ('
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+        'requestor_email TEXT NOT NULL, '
+        'target_email TEXT NOT NULL, '
+        'status TEXT NOT NULL, '
+        'created_at TEXT NOT NULL'
+        ')'
+    )
+    conn.execute(
+        'CREATE TABLE IF NOT EXISTS chat_messages ('
+        'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+        'sender_email TEXT NOT NULL, '
+        'recipient_email TEXT NOT NULL, '
+        'message TEXT NOT NULL, '
+        'created_at TEXT NOT NULL'
         ')'
     )
     conn.execute(
@@ -232,7 +279,7 @@ def dashboard():
     if query:
         query_param = f'%{query}%'
         matched_users = conn.execute(
-            'SELECT full_name, email, company, role FROM users WHERE full_name LIKE ? OR email LIKE ? OR company LIKE ? ORDER BY full_name ASC',
+            'SELECT u.full_name, u.email, u.company, u.role, c.id AS company_id FROM users u LEFT JOIN companies c ON u.company = c.name WHERE u.full_name LIKE ? OR u.email LIKE ? OR u.company LIKE ? ORDER BY u.full_name ASC',
             (query_param, query_param, query_param),
         ).fetchall()
         matched_companies = conn.execute(
@@ -255,6 +302,34 @@ def dashboard():
         'SELECT hr.id, hr.from_email, hr.role_title, hr.level, c.name AS company_name FROM hiring_requests hr JOIN companies c ON hr.company_id = c.id WHERE hr.to_email = ? AND hr.status = "pending" ORDER BY hr.created_at DESC',
         (user['email'],),
     ).fetchall()
+    connections = conn.execute(
+        'SELECT requestor_email, target_email FROM connections WHERE requestor_email = ? OR target_email = ?',
+        (user['email'], user['email']),
+    ).fetchall()
+    connected_emails = set()
+    for row in connections:
+        connected_emails.add(row['requestor_email'])
+        connected_emails.add(row['target_email'])
+    connected_emails.discard(user['email'])
+
+    recommended_users = conn.execute(
+        'SELECT u.full_name, u.email, u.company, u.role, c.id AS company_id FROM users u LEFT JOIN companies c ON u.company = c.name WHERE u.email != ? AND u.company != ? ORDER BY u.role ASC, u.full_name ASC LIMIT 5',
+        (user['email'], user['company']),
+    ).fetchall()
+
+    promotions = conn.execute(
+        'SELECT p.id, p.description, p.is_open, p.created_at, c.name AS company_name, c.id AS company_id, c.created_by, r.title AS role_title, r.level AS role_level FROM job_promotions p JOIN companies c ON p.company_id = c.id JOIN company_roles r ON p.role_id = r.id WHERE p.is_open = 1 ORDER BY p.created_at DESC'
+    ).fetchall()
+
+    founder_applications = []
+    if user['role'] == 'Founder' and user['company'] != 'Unemployed':
+        company_info = conn.execute('SELECT id FROM companies WHERE name = ?', (user['company'],)).fetchone()
+        if company_info:
+            founder_applications = conn.execute(
+                'SELECT ja.id, ja.status, ja.applicant_email, ja.created_at, ja.updated_at, u.full_name AS applicant_name, r.title AS role_title, r.level AS role_level, jp.id AS promotion_id, jp.description FROM job_applications ja JOIN job_promotions jp ON ja.promotion_id = jp.id JOIN company_roles r ON jp.role_id = r.id JOIN users u ON ja.applicant_email = u.email WHERE jp.company_id = ? AND ja.status IN ("pending", "interviewing") ORDER BY ja.created_at DESC',
+                (company_info['id'],),
+            ).fetchall()
+
     conn.close()
 
     return render_template(
@@ -268,6 +343,10 @@ def dashboard():
         total_companies=total_companies,
         notifications=notifications,
         pending_requests=pending_requests,
+        connected_emails=connected_emails,
+        recommended_users=recommended_users,
+        promotions=promotions,
+        founder_applications=founder_applications,
     )
 
 
@@ -277,15 +356,16 @@ def profile():
     if not user:
         return redirect('/')
 
+    email = request.args.get('email', user['email']).strip().lower()
     conn = get_db()
-    user_row = conn.execute('SELECT * FROM users WHERE email = ?', (user['email'],)).fetchone()
+    user_row = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
     if not user_row:
         conn.close()
         return redirect('/')
 
     experiences = conn.execute(
         'SELECT * FROM experiences WHERE user_email = ? ORDER BY id DESC',
-        (user['email'],),
+        (email,),
     ).fetchall()
     if user_row['company'] and user_row['company'] != 'Unemployed':
         team_count = conn.execute(
@@ -296,7 +376,7 @@ def profile():
         team_count = 0
     conn.close()
 
-    return render_template('profile.html', user=user_row, team_count=team_count, experiences=experiences)
+    return render_template('profile.html', user=user_row, team_count=team_count, experiences=experiences, is_self=(email == user['email']))
 
 
 @app.route('/company/<int:company_id>', methods=['GET', 'POST'])
@@ -305,6 +385,7 @@ def company_page(company_id):
     if not user:
         return redirect('/')
 
+    message = request.args.get('message', '')
     conn = get_db()
     company = conn.execute('SELECT * FROM companies WHERE id = ?', (company_id,)).fetchone()
     if not company:
@@ -320,10 +401,22 @@ def company_page(company_id):
     for item in assignments:
         team.setdefault(item['title'] + ' • ' + item['level'], []).append(item)
 
+    promotions = conn.execute(
+        'SELECT p.id, p.description, p.is_open, p.created_at, r.title AS role_title, r.level AS role_level FROM job_promotions p JOIN company_roles r ON p.role_id = r.id WHERE p.company_id = ? ORDER BY p.created_at DESC',
+        (company_id,),
+    ).fetchall()
+
+    applications = []
     is_founder = user['email'] == company['created_by']
+    if is_founder:
+        applications = conn.execute(
+            'SELECT ja.id, ja.status, ja.applicant_email, ja.created_at, ja.updated_at, u.full_name AS applicant_name, r.title AS role_title, r.level AS role_level, jp.description AS promotion_description, jp.id AS promotion_id FROM job_applications ja JOIN job_promotions jp ON ja.promotion_id = jp.id JOIN company_roles r ON jp.role_id = r.id JOIN users u ON ja.applicant_email = u.email WHERE jp.company_id = ? ORDER BY ja.created_at DESC',
+            (company_id,),
+        ).fetchall()
+
     conn.close()
 
-    return render_template('company.html', user=user, company=company, roles=roles, team=team, is_founder=is_founder)
+    return render_template('company.html', user=user, company=company, roles=roles, team=team, is_founder=is_founder, promotions=promotions, applications=applications, message=message)
 
 
 @app.route('/company/<int:company_id>/add-role', methods=['POST'])
@@ -424,6 +517,9 @@ def send_request():
         if target['email'] == user['email']:
             conn.close()
             return redirect(url_for('dashboard', message='Cannot send request to yourself.'))
+        if target['company'] == user['company']:
+            conn.close()
+            return redirect(url_for('dashboard', message='Cannot send a hiring request to someone already at your company.'))
     else:
         # Candidate is sending a job request to a founder.
         if target['role'] != 'Founder':
@@ -489,6 +585,215 @@ def respond_request():
     conn.close()
     add_notification(hr['from_email'], f'{user["full_name"]} declined your request for {company["name"]}.', url_for('dashboard'))
     return redirect(url_for('dashboard', message='You declined the request.'))
+
+
+@app.route('/friend-request', methods=['POST'])
+def friend_request():
+    user = current_user()
+    if not user:
+        return redirect('/')
+
+    target_email = request.form.get('target_email', '').strip().lower()
+    if not target_email or target_email == user['email']:
+        return redirect(url_for('dashboard', message='Invalid friend request.'))
+
+    conn = get_db()
+    target = conn.execute('SELECT * FROM users WHERE email = ?', (target_email,)).fetchone()
+    if not target:
+        conn.close()
+        return redirect(url_for('dashboard', message='User not found.'))
+
+    existing = conn.execute(
+        'SELECT id FROM connections WHERE (requestor_email = ? AND target_email = ?) OR (requestor_email = ? AND target_email = ?)',
+        (user['email'], target_email, target_email, user['email']),
+    ).fetchone()
+    if existing:
+        conn.close()
+        return redirect(url_for('dashboard', message='You are already connected with this user.'))
+
+    conn.execute(
+        'INSERT INTO connections (requestor_email, target_email, status, created_at) VALUES (?, ?, ?, ?)',
+        (user['email'], target_email, 'accepted', datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')),
+    )
+    conn.commit()
+    conn.close()
+    add_notification(target_email, f'{user["full_name"]} added you as a connection.', url_for('profile', email=user['email']))
+    return redirect(url_for('dashboard', message='Connection added.'))
+
+
+@app.route('/chat/<other_email>')
+def chat(other_email):
+    user = current_user()
+    if not user:
+        return redirect('/')
+
+    other_email = other_email.strip().lower()
+    if other_email == user['email']:
+        return redirect(url_for('dashboard', message='Cannot chat with yourself.'))
+
+    conn = get_db()
+    other = conn.execute('SELECT * FROM users WHERE email = ?', (other_email,)).fetchone()
+    if not other:
+        conn.close()
+        return redirect(url_for('dashboard', message='User not found.'))
+
+    messages = conn.execute(
+        'SELECT * FROM chat_messages WHERE (sender_email = ? AND recipient_email = ?) OR (sender_email = ? AND recipient_email = ?) ORDER BY created_at ASC',
+        (user['email'], other_email, other_email, user['email']),
+    ).fetchall()
+    conn.close()
+
+    return render_template('chat.html', user=user, other=other, messages=messages)
+
+
+@app.route('/send-message', methods=['POST'])
+def send_message():
+    user = current_user()
+    if not user:
+        return redirect('/')
+
+    recipient_email = request.form.get('recipient_email', '').strip().lower()
+    message = request.form.get('message', '').strip()
+    if not recipient_email or not message or recipient_email == user['email']:
+        return redirect(url_for('dashboard', message='Cannot send empty message.'))
+
+    conn = get_db()
+    recipient = conn.execute('SELECT * FROM users WHERE email = ?', (recipient_email,)).fetchone()
+    if not recipient:
+        conn.close()
+        return redirect(url_for('dashboard', message='Recipient not found.'))
+
+    conn.execute(
+        'INSERT INTO chat_messages (sender_email, recipient_email, message, created_at) VALUES (?, ?, ?, ?)',
+        (user['email'], recipient_email, message, datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')),
+    )
+    conn.commit()
+    conn.close()
+    add_notification(recipient_email, f'{user["full_name"]} sent you a chat message.', url_for('chat', other_email=user['email']))
+    return redirect(url_for('chat', other_email=recipient_email))
+
+
+@app.route('/company/<int:company_id>/create-promotion', methods=['POST'])
+def create_promotion(company_id):
+    user = current_user()
+    if not user:
+        return redirect('/')
+
+    conn = get_db()
+    company = conn.execute('SELECT * FROM companies WHERE id = ?', (company_id,)).fetchone()
+    if not company or company['created_by'] != user['email']:
+        conn.close()
+        return redirect(url_for('company_page', company_id=company_id))
+
+    title = request.form.get('title', '').strip()
+    level = request.form.get('level', '').strip()
+    description = request.form.get('description', '').strip()
+    if title and level:
+        role = conn.execute('SELECT * FROM company_roles WHERE company_id = ? AND title = ? AND level = ?', (company_id, title, level)).fetchone()
+        if not role:
+            result = conn.execute(
+                'INSERT INTO company_roles (company_id, title, level, description) VALUES (?, ?, ?, ?)',
+                (company_id, title, level, description or 'Role added for a new hiring promotion.'),
+            )
+            role_id = result.lastrowid
+        else:
+            role_id = role['id']
+        conn.execute(
+            'INSERT INTO job_promotions (company_id, role_id, description, is_open, created_at) VALUES (?, ?, ?, ?, ?)',
+            (company_id, role_id, description or f'Hiring for {title} ({level}).', 1, datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')),
+        )
+        conn.commit()
+    conn.close()
+    return redirect(url_for('company_page', company_id=company_id, message='Promotion created.'))
+
+
+@app.route('/apply-promotion', methods=['POST'])
+def apply_promotion():
+    user = current_user()
+    if not user:
+        return redirect('/')
+
+    promotion_id = request.form.get('promotion_id', type=int)
+    conn = get_db()
+    promotion = conn.execute(
+        'SELECT p.id, p.company_id, c.name AS company_name, c.created_by, r.title AS role_title, r.level AS role_level FROM job_promotions p JOIN companies c ON p.company_id = c.id JOIN company_roles r ON p.role_id = r.id WHERE p.id = ? AND p.is_open = 1',
+        (promotion_id,),
+    ).fetchone()
+    if not promotion:
+        conn.close()
+        return redirect(url_for('dashboard', message='Promotion not found.'))
+    if user['company'] == promotion['company_name']:
+        conn.close()
+        return redirect(url_for('dashboard', message='You are already part of this company.'))
+
+    existing = conn.execute(
+        'SELECT id FROM job_applications WHERE promotion_id = ? AND applicant_email = ? AND status IN ("pending", "interviewing")',
+        (promotion_id, user['email']),
+    ).fetchone()
+    if existing:
+        conn.close()
+        return redirect(url_for('dashboard', message='You already have an active application for this role.'))
+
+    conn.execute(
+        'INSERT INTO job_applications (promotion_id, applicant_email, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+        (promotion_id, user['email'], 'pending', datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'), datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')),
+    )
+    conn.commit()
+    conn.close()
+    add_notification(promotion['created_by'], f'{user["full_name"]} applied for {promotion["role_title"]} at {promotion["company_name"]}.', url_for('company_page', company_id=promotion['company_id']))
+    return redirect(url_for('dashboard', message='Application submitted.'))
+
+
+@app.route('/process-application', methods=['POST'])
+def process_application():
+    user = current_user()
+    if not user:
+        return redirect('/')
+
+    application_id = request.form.get('application_id', type=int)
+    action = request.form.get('action', '').strip().lower()
+    conn = get_db()
+    application = conn.execute(
+        'SELECT ja.id, ja.applicant_email, ja.status, ja.promotion_id, jp.company_id, jp.role_id, c.name AS company_name, c.created_by, r.title AS role_title, r.level AS role_level FROM job_applications ja JOIN job_promotions jp ON ja.promotion_id = jp.id JOIN companies c ON jp.company_id = c.id JOIN company_roles r ON jp.role_id = r.id WHERE ja.id = ?',
+        (application_id,),
+    ).fetchone()
+    if not application or application['created_by'] != user['email']:
+        conn.close()
+        return redirect(url_for('dashboard', message='Application not found.'))
+
+    applicant = conn.execute('SELECT * FROM users WHERE email = ?', (application['applicant_email'],)).fetchone()
+    if not applicant:
+        conn.close()
+        return redirect(url_for('dashboard', message='Applicant user not found.'))
+
+    new_status = application['status']
+    if action == 'interview':
+        new_status = 'interviewing'
+        add_notification(applicant['email'], f'Interview scheduled for {application["role_title"]} at {application["company_name"]}.', url_for('dashboard'))
+    elif action == 'accept':
+        if applicant['company'] and applicant['company'] != 'Unemployed':
+            add_experience(applicant['email'], applicant['company'], applicant['role'], applicant['role'])
+        conn.execute(
+            'UPDATE users SET company = ?, role = ? WHERE email = ?',
+            (application['company_name'], application['role_title'], applicant['email']),
+        )
+        conn.execute(
+            'INSERT INTO role_assignments (company_id, user_email, role_id, assigned_at) VALUES (?, ?, ?, ?)',
+            (application['company_id'], applicant['email'], application['role_id'], datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')),
+        )
+        new_status = 'accepted'
+        add_notification(applicant['email'], f'Congratulations! You were hired as {application["role_title"]} at {application["company_name"]}.', url_for('profile', email=applicant['email']))
+    elif action == 'decline':
+        new_status = 'declined'
+        add_notification(applicant['email'], f'Your application for {application["role_title"]} at {application["company_name"]} was declined.', url_for('dashboard'))
+
+    conn.execute(
+        'UPDATE job_applications SET status = ?, updated_at = ? WHERE id = ?',
+        (new_status, datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'), application_id),
+    )
+    conn.commit()
+    conn.close()
+    return redirect(url_for('company_page', company_id=application['company_id'], message='Application updated.'))
 
 
 @app.route('/read-notifications')

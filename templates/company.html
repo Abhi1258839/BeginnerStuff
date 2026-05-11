@@ -181,6 +181,64 @@
                     </div>
                 </div>
             </section>
+            {% if message %}
+                <section class="company-card" style="background: #e9f7ef; border-color: #cde9d8; color: #0f5132;">
+                    <p style="margin:0; font-weight:700;">{{ message }}</p>
+                </section>
+            {% endif %}
+            <section class="section-card">
+                <h2 class="headline">Current role promotions</h2>
+                {% if promotions %}
+                    <div class="team-grid">
+                        {% for promotion in promotions %}
+                            <div class="role-card">
+                                <strong>{{ promotion.role_title }} • {{ promotion.role_level }}</strong>
+                                <p style="margin:10px 0 0; color: var(--muted);">{{ promotion.description }}</p>
+                                <div class="button-row" style="margin-top:16px;">
+                                    <a class="button-secondary" href="/company/{{ company.id }}">View company</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">No active promotions have been posted yet. Founders can publish roles below.</div>
+                {% endif %}
+            </section>
+            {% if is_founder %}
+                <section class="section-card">
+                    <h2 class="headline">Manage hiring applications</h2>
+                    {% if applications %}
+                        <div class="team-grid">
+                            {% for app in applications %}
+                                <div class="role-card">
+                                    <strong>{{ app.applicant_name }} applied for {{ app.role_title }} • {{ app.role_level }}</strong>
+                                    <span>{{ app.promotion_description }}</span>
+                                    <span>Status: {{ app.status }}</span>
+                                    <div class="button-row" style="margin-top:12px; gap:10px; flex-wrap:wrap;">
+                                        <form method="post" action="/process-application" style="display:inline-block; margin:0;">
+                                            <input type="hidden" name="application_id" value="{{ app.id }}">
+                                            <input type="hidden" name="action" value="interview">
+                                            <button type="submit" class="button-secondary">Schedule interview</button>
+                                        </form>
+                                        <form method="post" action="/process-application" style="display:inline-block; margin:0;">
+                                            <input type="hidden" name="application_id" value="{{ app.id }}">
+                                            <input type="hidden" name="action" value="accept">
+                                            <button type="submit" class="button-primary">Hire</button>
+                                        </form>
+                                        <form method="post" action="/process-application" style="display:inline-block; margin:0;">
+                                            <input type="hidden" name="application_id" value="{{ app.id }}">
+                                            <input type="hidden" name="action" value="decline">
+                                            <button type="submit" class="button-secondary">Decline</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">No hiring applications are waiting. Candidates will see promotions on the dashboard and can apply directly.</div>
+                    {% endif %}
+                </section>
+            {% endif %}
             <section class="section-card">
                 <h2 class="headline">Organization chart</h2>
                 <div class="org-tree">
@@ -222,6 +280,24 @@
                                     <textarea name="description" placeholder="Brief role summary" style="width:100%; padding:10px; margin-top:8px; border:1px solid #d9e2ef; border-radius:12px; height:100px;"></textarea>
                                 </div>
                                 <button type="submit" class="button-primary" style="margin-top:14px;">Create role</button>
+                            </form>
+                        </div>
+                        <div class="role-card">
+                            <h3>Post a hiring promotion</h3>
+                            <form method="post" action="/company/{{ company.id }}/create-promotion">
+                                <div>
+                                    <label>Title</label>
+                                    <input type="text" name="title" placeholder="e.g. Software Engineer" style="width:100%; padding:10px; margin-top:8px; border:1px solid #d9e2ef; border-radius:12px;" required>
+                                </div>
+                                <div style="margin-top:12px;">
+                                    <label>Level</label>
+                                    <input type="text" name="level" placeholder="e.g. Senior" style="width:100%; padding:10px; margin-top:8px; border:1px solid #d9e2ef; border-radius:12px;" required>
+                                </div>
+                                <div style="margin-top:12px;">
+                                    <label>Promotion description</label>
+                                    <textarea name="description" placeholder="Why this role is open" style="width:100%; padding:10px; margin-top:8px; border:1px solid #d9e2ef; border-radius:12px; height:100px;"></textarea>
+                                </div>
+                                <button type="submit" class="button-primary" style="margin-top:14px;">Publish promotion</button>
                             </form>
                         </div>
                         <div class="role-card">
