@@ -262,6 +262,36 @@
                 {% if message %}
                     <div class="message-box">{{ message }}</div>
                 {% endif %}
+                {% if notifications %}
+                    <section class="message-box">
+                        {% for note in notifications %}
+                            <div>{{ note.message }}</div>
+                        {% endfor %}
+                        <div style="margin-top:12px;">
+                            <a href="/read-notifications" style="font-weight:700; color:#0a66c2; text-decoration:none;">Mark all notifications read</a>
+                        </div>
+                    </section>
+                {% endif %}
+                {% if pending_requests %}
+                    <section class="message-box">
+                        <strong>Hiring requests</strong>
+                        {% for request in pending_requests %}
+                            <div style="margin-top:12px;">
+                                <span>{{ request.from_email }} invited you to join {{ request.company_name }} as {{ request.role_title }} ({{ request.level }})</span>
+                                <form method="post" action="/respond-request" style="display:inline-block; margin-left:12px;">
+                                    <input type="hidden" name="request_id" value="{{ request.id }}">
+                                    <input type="hidden" name="action" value="accept">
+                                    <button type="submit" class="button-primary" style="padding:8px 14px; font-size:0.9rem;">Accept</button>
+                                </form>
+                                <form method="post" action="/respond-request" style="display:inline-block; margin-left:8px;">
+                                    <input type="hidden" name="request_id" value="{{ request.id }}">
+                                    <input type="hidden" name="action" value="decline">
+                                    <button type="submit" class="button-secondary" style="padding:8px 14px; font-size:0.9rem;">Decline</button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </section>
+                {% endif %}
                 <section class="hero-card">
                     <h1>Welcome back, {{ user.full_name }}.</h1>
                     <p>Find your next connection, create a professional company listing, and search the network for people and organizations that matter.</p>
@@ -295,12 +325,25 @@
                                         <strong>{{ profile.full_name }}</strong>
                                         <span>{{ profile.role }} • {{ profile.company }}</span>
                                         <span>{{ profile.email }}</span>
+                                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+                                            {% if user.role == 'Founder' and profile.email != user.email %}
+                                                <button class="button-primary request-button" data-email="{{ profile.email }}" data-company-id="{{ user.company_id|default('') }}">Send hiring request</button>
+                                            {% elif profile.role == 'Founder' and profile.email != user.email and user.email != profile.email %}
+                                                <button class="button-secondary request-button" data-email="{{ profile.email }}" data-company-id="{{ profile.company_id|default('') }}">Request job</button>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 {% endfor %}
                                 {% for company in companies %}
                                     <div class="result-item">
-                                        <strong>{{ company.name }}</strong>
+                                        <strong><a href="/company/{{ company.id }}" style="color: inherit; text-decoration:none;">{{ company.name }}</a></strong>
                                         <span>{{ company.description }}</span>
+                                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+                                            <a class="button-secondary" href="/company/{{ company.id }}">View stats</a>
+                                            {% if user.role != 'Founder' and user.company != company.name %}
+                                                <button class="button-primary request-button" data-email="{{ company.created_by }}" data-company-id="{{ company.id }}">Request job</button>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 {% endfor %}
                             </div>
@@ -316,6 +359,12 @@
                                 <div class="company-item">
                                     <strong>{{ company.name }}</strong>
                                     <span>{{ company.description }}</span>
+                                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+                                        <a class="button-secondary" href="/company/{{ company.id }}">View stats</a>
+                                        {% if user.role != 'Founder' and user.company != company.name %}
+                                            <button class="button-primary request-button" data-email="{{ company.created_by }}" data-company-id="{{ company.id }}">Request job</button>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             {% endfor %}
                             {% if not companies %}
@@ -342,5 +391,31 @@
             </aside>
         </div>
     </div>
+    <form id="send-request-form" method="post" action="/send-request" style="display:none;">
+        <input type="hidden" name="to_email" id="request-email">
+        <input type="hidden" name="company_id" id="request-company-id">
+        <input type="hidden" name="role_title" id="request-role">
+        <input type="hidden" name="level" id="request-level">
+        <input type="hidden" name="message" id="request-message">
+    </form>
+    <script>
+        document.querySelectorAll('.request-button').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var email = button.getAttribute('data-email');
+                var companyId = button.getAttribute('data-company-id');
+                var role = prompt('Enter the role title to request:', 'Software Engineer');
+                if (!role) return;
+                var level = prompt('Enter the role level:', 'Senior');
+                if (!level) return;
+                var message = prompt('Add a short message for the recipient:', 'I would love to join your team.');
+                document.getElementById('request-email').value = email;
+                document.getElementById('request-company-id').value = companyId || '';
+                document.getElementById('request-role').value = role;
+                document.getElementById('request-level').value = level;
+                document.getElementById('request-message').value = message;
+                document.getElementById('send-request-form').submit();
+            });
+        });
+    </script>
 </body>
 </html>

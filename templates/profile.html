@@ -176,6 +176,23 @@
                     </div>
                 </div>
             </section>
+            <section class="details-card">
+                <h2 class="section-title">Experience history</h2>
+                {% if experiences %}
+                    <div class="detail-grid">
+                        {% for exp in experiences %}
+                            <div class="detail-block">
+                                <strong>{{ exp.role }} at {{ exp.company_name }}</strong>
+                                <span>{{ exp.level }}</span>
+                                <span>{{ exp.start_date }} – {{ exp.end_date }}</span>
+                                <span>{{ exp.description }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: var(--muted); margin: 0;">No past company experience yet. Join a company or accept a hiring request to build your history.</p>
+                {% endif %}
+            </section>
         </div>
     </div>
 </body>

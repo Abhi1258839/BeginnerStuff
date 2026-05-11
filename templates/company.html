@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ company.name }} | LinkedIn</title>
+    <style>
+        :root {
+            --bg: #f7fafc;
+            --surface: #ffffff;
+            --accent: #0a66c2;
+            --muted: #546475;
+            --border: #d9e2ef;
+            --radius: 24px;
+            --shadow: 0 24px 60px rgba(12, 53, 111, 0.08);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #eef3f9 0%, #f8fbff 100%);
+            color: #10203f;
+        }
+        .page-shell {
+            width: min(1000px, 100%);
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 22px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 1.15rem;
+        }
+        .content {
+            display: grid;
+            gap: 24px;
+        }
+        .company-card,
+        .section-card,
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+            box-shadow: var(--shadow);
+        }
+        .section-card {
+            display: grid;
+            gap: 18px;
+        }
+        .headline {
+            margin: 0;
+            font-size: 2rem;
+        }
+        .subtext {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+        .detail-block {
+            padding: 18px;
+            border-radius: 20px;
+            background: #f8fbff;
+            border: 1px solid #e4ecf7;
+        }
+        .detail-block strong {
+            display: block;
+            margin-bottom: 10px;
+            color: #10203f;
+        }
+        .button-row {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .button-primary,
+        .button-secondary {
+            border: none;
+            border-radius: 999px;
+            padding: 14px 24px;
+            cursor: pointer;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .button-primary {
+            background: var(--accent);
+            color: white;
+        }
+        .button-secondary {
+            background: rgba(10, 102, 194, 0.08);
+            color: var(--accent);
+        }
+        .role-row {
+            display: grid;
+            gap: 16px;
+            margin-top: 18px;
+        }
+        .role-card {
+            padding: 18px;
+            border-radius: 20px;
+            border: 1px solid #d9e2ef;
+            background: #fbfcff;
+        }
+        .team-grid {
+            display: grid;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .org-tree {
+            display: grid;
+            gap: 16px;
+        }
+        .org-node {
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid #d9e2ef;
+            background: #ffffff;
+            box-shadow: 0 12px 30px rgba(12, 53, 111, 0.06);
+        }
+        .org-node strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+        .org-list {
+            display: grid;
+            gap: 14px;
+        }
+        .role-actions {
+            display: grid;
+            gap: 12px;
+        }
+        @media (max-width: 820px) {
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+        <div class="topbar">
+            <div class="brand">LinkedIn</div>
+            <div class="button-row">
+                <a class="button-secondary" href="/dashboard">Back to home</a>
+                <a class="button-secondary" href="/logout">Log out</a>
+            </div>
+        </div>
+        <div class="content">
+            <section class="company-card">
+                <h1 class="headline">{{ company.name }}</h1>
+                <p class="subtext">{{ company.description }}</p>
+                <div class="detail-grid">
+                    <div class="detail-block">
+                        <strong>Founder</strong>
+                        <span>{{ company.created_by }}</span>
+                    </div>
+                    <div class="detail-block">
+                        <strong>Role structure</strong>
+                        <span>{{ roles|length }} defined role{{ 's' if roles|length != 1 }}</span>
+                    </div>
+                </div>
+            </section>
+            <section class="section-card">
+                <h2 class="headline">Organization chart</h2>
+                <div class="org-tree">
+                    <div class="org-node">
+                        <strong>Founder</strong>
+                        <div>{{ company.created_by }}</div>
+                    </div>
+                    {% for title, members in team.items() %}
+                        <div class="org-node">
+                            <strong>{{ title }}</strong>
+                            <div class="org-list">
+                                {% for member in members %}
+                                    <span>{{ member.full_name }} • {{ member.email }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    {% if not team %}
+                        <div class="org-node">No team members assigned yet. Add roles and assignments to build your company org view.</div>
+                    {% endif %}
+                </div>
+            </section>
+            {% if is_founder %}
+                <section class="section-card">
+                    <div class="role-actions">
+                        <div class="role-card">
+                            <h3>Add a role</h3>
+                            <form method="post" action="/company/{{ company.id }}/add-role">
+                                <div>
+                                    <label>Title</label>
+                                    <input type="text" name="title" placeholder="e.g. Product Lead" style="width:100%; padding:10px; margin-top:8px; border:1px solid #d9e2ef; border-radius:12px;" required>
+                                </div>
+                                <div style="margin-top:12px;">
+                                    <label>Level</label>
+                                    <input type="text" name="level" placeholder="e.g. Senior" style="width:100%; padding:10px; margin-top:8px; border:1px solid #d9e2ef; border-radius:12px;" required>
+                                </div>
+                                <div style="margin-top:12px;">
+                                    <label>Description</label>
+                                    <textarea name="description" placeholder="Brief role summary" style="width:100%; padding:10px; margin-top:8px; border:1px solid #d9e2ef; border-radius:12px; height:100px;"></textarea>
+                                </div>
+                                <button type="submit" class="button-primary" style="margin-top:14px;">Create role</button>
+                            </form>
+                        </div>
+                        <div class="role-card">
+                            <h3>Assign team member</h3>
+                            {% if roles %}
+                                <form method="post" action="/company/{{ company.id }}/assign-role">
+                                    <div>
+                                        <label>Select role</label>
+                                        <select name="role_id" style="width:100%; padding:10px; margin-top:8px; border:1px solid #d9e2ef; border-radius:12px;" required>
+                                            {% for role in roles %}
+                                                <option value="{{ role.id }}">{{ role.title }} • {{ role.level }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div style="margin-top:12px;">
+                                        <label>Employee email</label>
+                                        <input type="email" name="employee_email" placeholder="user@example.com" style="width:100%; padding:10px; margin-top:8px; border:1px solid #d9e2ef; border-radius:12px;" required>
+                                    </div>
+                                    <button type="submit" class="button-primary" style="margin-top:14px;">Assign user</button>
+                                </form>
+                            {% else %}
+                                <p style="color: var(--muted);">Create at least one role before assigning team members.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </section>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
