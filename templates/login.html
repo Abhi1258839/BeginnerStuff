@@ -3,88 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Trading App</title>
+    <title>LinkedIn Login</title>
     <style>
+        :root {
+            --bg: #f3f2ef;
+            --card: #ffffff;
+            --text: #0a66c2;
+            --muted: #444d56;
+            --border: #dce6f1;
+            --button: #0a66c2;
+            --button-hover: #004182;
+        }
+        * { box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            color: #333;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at top left, rgba(10, 102, 194, 0.14), transparent 20%),
+                        linear-gradient(180deg, #f6f7f9 0%, #eef1f5 100%);
+            color: #1c1e21;
+            display: grid;
+            place-items: center;
+            padding: 24px;
         }
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 100%;
+        .page-shell {
+            width: min(520px, 100%);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: 0 30px 70px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
         }
-        h1 {
-            color: #4CAF50;
-            margin-bottom: 10px;
-        }
-        h2 {
-            margin-bottom: 20px;
-            color: #555;
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            text-align: left;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input {
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-        button {
-            padding: 10px;
-            background: #4CAF50;
+        .hero {
+            background: linear-gradient(135deg, #0a66c2 0%, #004182 100%);
             color: white;
+            padding: 32px 28px;
+        }
+        .hero h1 {
+            margin: 0;
+            font-size: 2.3rem;
+            letter-spacing: -0.04em;
+        }
+        .hero p {
+            margin: 16px 0 0;
+            line-height: 1.7;
+            color: rgba(255,255,255,0.92);
+        }
+        .form-panel {
+            padding: 32px 28px 36px;
+        }
+        .form-panel h2 {
+            margin: 0 0 20px;
+            color: var(--text);
+            font-size: 1.35rem;
+        }
+        .field {
+            margin-bottom: 16px;
+        }
+        .field label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: var(--muted);
+        }
+        .field input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: #f8fafc;
+            font-size: 1rem;
+            color: #111827;
+        }
+        .field input:focus {
+            outline: 2px solid rgba(10,102,194,0.24);
+            border-color: #0a66c2;
+        }
+        .form-button {
+            width: 100%;
+            padding: 14px 16px;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
+            border-radius: 14px;
+            background: var(--button);
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: background 0.2s ease;
         }
-        button:hover {
-            background: #45a049;
+        .form-button:hover {
+            background: var(--button-hover);
         }
-        .error {
-            color: red;
-            margin-top: 10px;
+        .small-note {
+            margin-top: 20px;
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+        .small-note a {
+            color: var(--button);
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .error-box {
+            margin-bottom: 20px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: #ffe8e8;
+            color: #842029;
+            border: 1px solid #f5c2c7;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to Trading App</h1>
-        <h2>Login</h2>
-        <form method="POST">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
-            <button type="submit">Login</button>
-        </form>
-        <div class="link">
-            New here? <a href="/signup">Create an account</a>
-        </div>
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
+    <div class="page-shell">
+        <section class="hero">
+            <h1>LinkedIn</h1>
+            <p>Sign in to discover professional opportunities, network with peers, and build your professional identity.</p>
+        </section>
+        <section class="form-panel">
+            <h2>Login to LinkedIn</h2>
+            {% if error %}
+                <div class="error-box">{{ error }}</div>
+            {% endif %}
+            <form method="post" action="/">
+                <div class="field">
+                    <label for="full_name">Full name</label>
+                    <input id="full_name" name="full_name" type="text" placeholder="Enter your full name" value="{{ full_name|default('') }}" required>
+                </div>
+                <div class="field">
+                    <label for="email">Email address</label>
+                    <input id="email" name="email" type="email" placeholder="name@example.com" value="{{ email|default('') }}" required>
+                </div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input id="password" name="password" type="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="form-button">Sign in</button>
+            </form>
+            <p class="small-note">New here? <a href="/signup">Create an account</a></p>
+        </section>
     </div>
 </body>
 </html>

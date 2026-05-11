@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register Company | LinkedIn</title>
+    <style>
+        :root {
+            --bg: #eef3f8;
+            --surface: #ffffff;
+            --accent: #0a66c2;
+            --muted: #52637a;
+            --border: #d6e3f1;
+            --radius: 24px;
+            --shadow: 0 26px 70px rgba(15, 31, 70, 0.08);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #edf3f8 0%, #f7fbff 100%);
+            color: #162c4b;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+        .page-shell {
+            width: min(560px, 100%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .hero {
+            padding: 36px 32px;
+            background: linear-gradient(135deg, #0a66c2 0%, #124e9c 100%);
+            color: white;
+        }
+        .hero h1 {
+            margin: 0;
+            font-size: 2.1rem;
+        }
+        .hero p {
+            margin: 18px 0 0;
+            line-height: 1.75;
+            font-size: 1rem;
+        }
+        .form-panel {
+            padding: 32px;
+        }
+        .form-panel h2 {
+            margin: 0 0 18px;
+            font-size: 1.3rem;
+            color: var(--text);
+        }
+        .field {
+            margin-bottom: 18px;
+        }
+        .field label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+        .field input,
+        .field textarea {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 14px 16px;
+            font-size: 1rem;
+            background: #f8fbff;
+            color: #10273c;
+        }
+        .field textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        .button-primary,
+        .button-secondary {
+            border: none;
+            border-radius: 999px;
+            padding: 14px 22px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .button-primary {
+            background: var(--accent);
+            color: white;
+        }
+        .button-secondary {
+            background: rgba(10, 102, 194, 0.08);
+            color: var(--accent);
+        }
+        .button-row {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 20px;
+        }
+        .error-box {
+            margin-bottom: 16px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: rgba(255, 226, 226, 0.9);
+            border: 1px solid #f4c2c2;
+            color: #842029;
+        }
+        .success-box {
+            margin-bottom: 16px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: rgba(36, 164, 96, 0.14);
+            border: 1px solid rgba(36, 164, 96, 0.3);
+            color: #154c3d;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+        <section class="hero">
+            <h1>Register your company</h1>
+            <p>Publish your company on the LinkedIn network so other professionals can discover and connect with your organization.</p>
+        </section>
+        <section class="form-panel">
+            <h2>Company details</h2>
+            {% if error %}
+                <div class="error-box">{{ error }}</div>
+            {% endif %}
+            {% if success %}
+                <div class="success-box">{{ success }}</div>
+            {% endif %}
+            <form method="post" action="/register-company">
+                <div class="field">
+                    <label for="company_name">Company name</label>
+                    <input id="company_name" name="company_name" type="text" placeholder="Example: TechBridge" value="{{ company_name|default('') }}" required />
+                </div>
+                <div class="field">
+                    <label for="description">Company description</label>
+                    <textarea id="description" name="description" placeholder="Describe your company"></textarea>
+                </div>
+                <div class="button-row">
+                    <button type="submit" class="button-primary">Create company</button>
+                    <a class="button-secondary" href="/dashboard">Back to dashboard</a>
+                </div>
+            </form>
+        </section>
+    </div>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinkedIn Dashboard</title>
+    <style>
+        :root {
+            --bg: #eef3f8;
+            --surface: #ffffff;
+            --accent: #0a66c2;
+            --accent-soft: rgba(10, 102, 194, 0.1);
+            --text: #0f172a;
+            --muted: #52637a;
+            --border: #d7e2ed;
+            --shadow: 0 30px 65px rgba(14, 56, 111, 0.08);
+            --radius: 24px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #eef3f8 0%, #f7fafc 100%);
+            color: var(--text);
+        }
+        .page-shell {
+            width: min(1180px, 100%);
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 14px 18px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 1.2rem;
+        }
+        .brand-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+        .search-box {
+            flex: 1;
+            position: relative;
+        }
+        .search-box input {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 14px 56px 14px 18px;
+            font-size: 1rem;
+            background: #f8fbff;
+            color: var(--text);
+        }
+        .search-box button {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: none;
+            color: var(--accent);
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .profile-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 18px 40px rgba(10, 102, 194, 0.12);
+            user-select: none;
+        }
+        .layout {
+            display: grid;
+            grid-template-columns: 1.55fr 0.9fr;
+            gap: 24px;
+        }
+        .hero-card,
+        .insight-card,
+        .company-card,
+        .people-card,
+        .search-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            box-shadow: var(--shadow);
+        }
+        .hero-card h1 {
+            margin: 0;
+            font-size: clamp(2rem, 3vw, 2.7rem);
+            line-height: 1.05;
+        }
+        .hero-card p {
+            margin: 18px 0 0;
+            color: var(--muted);
+            line-height: 1.8;
+            font-size: 1rem;
+            max-width: 88%;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+        .stat-block {
+            border-radius: 20px;
+            background: rgba(10, 102, 194, 0.06);
+            padding: 18px;
+            display: grid;
+            gap: 8px;
+        }
+        .stat-block strong {
+            font-size: 1.45rem;
+            color: var(--accent);
+        }
+        .stat-block span {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+        .section-title {
+            margin: 0 0 18px;
+            color: var(--text);
+            font-size: 1.15rem;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 24px;
+        }
+        .button-primary,
+        .button-secondary {
+            border: none;
+            border-radius: 999px;
+            padding: 14px 24px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.98rem;
+        }
+        .button-primary {
+            background: var(--accent);
+            color: white;
+        }
+        .button-secondary {
+            background: rgba(10, 102, 194, 0.08);
+            color: var(--accent);
+        }
+        .highlight-box {
+            margin-top: 24px;
+            padding: 20px;
+            border-radius: 20px;
+            background: rgba(10, 102, 194, 0.08);
+            color: var(--text);
+            display: grid;
+            gap: 16px;
+        }
+        .company-list,
+        .people-list,
+        .result-list {
+            display: grid;
+            gap: 14px;
+        }
+        .result-item,
+        .company-item,
+        .people-item {
+            display: grid;
+            gap: 6px;
+            padding: 18px;
+            border-radius: 18px;
+            background: #f8fbff;
+            border: 1px solid #e7eef8;
+        }
+        .result-item strong,
+        .company-item strong,
+        .people-item strong {
+            font-size: 1rem;
+            color: var(--text);
+        }
+        .result-item span,
+        .company-item span,
+        .people-item span {
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        .empty-state {
+            padding: 20px;
+            border-radius: 18px;
+            background: #f7f9fc;
+            border: 1px solid #e5ebf3;
+            color: var(--muted);
+        }
+        .message-box {
+            margin-bottom: 20px;
+            padding: 16px 18px;
+            border-radius: 18px;
+            background: rgba(46, 177, 146, 0.12);
+            border: 1px solid rgba(46, 177, 146, 0.18);
+            color: #0f5132;
+        }
+        @media (max-width: 1024px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 640px) {
+            .topbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-box {
+                order: 3;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+        <div class="topbar">
+            <div class="brand">
+                <div class="brand-dot"></div>
+                LinkedIn
+            </div>
+            <form class="search-box" method="get" action="/dashboard">
+                <input type="search" name="q" placeholder="Search users or companies" value="{{ query|default('') }}" />
+                <button type="submit">Search</button>
+            </form>
+            <a href="/profile" class="profile-pill">{{ user.full_name.split(' ')[0][0] }}{{ user.full_name.split(' ')[-1][0] }}</a>
+        </div>
+
+        <div class="layout">
+            <div>
+                {% if message %}
+                    <div class="message-box">{{ message }}</div>
+                {% endif %}
+                <section class="hero-card">
+                    <h1>Welcome back, {{ user.full_name }}.</h1>
+                    <p>Find your next connection, create a professional company listing, and search the network for people and organizations that matter.</p>
+                    <div class="button-group">
+                        <a href="/register-company" class="button-primary">Register as company</a>
+                        <a href="/logout" class="button-secondary">Sign out</a>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-block">
+                            <strong>{{ total_users }}</strong>
+                            <span>Professionals on LinkedIn</span>
+                        </div>
+                        <div class="stat-block">
+                            <strong>{{ total_companies }}</strong>
+                            <span>Companies registered</span>
+                        </div>
+                        <div class="stat-block">
+                            <strong>{{ user.company }}</strong>
+                            <span>Your current company</span>
+                        </div>
+                    </div>
+                </section>
+
+                {% if query %}
+                    <section class="search-card">
+                        <h2 class="section-title">Search results for “{{ query }}”</h2>
+                        {% if users or companies %}
+                            <div class="result-list">
+                                {% for profile in users %}
+                                    <div class="result-item">
+                                        <strong>{{ profile.full_name }}</strong>
+                                        <span>{{ profile.role }} • {{ profile.company }}</span>
+                                        <span>{{ profile.email }}</span>
+                                    </div>
+                                {% endfor %}
+                                {% for company in companies %}
+                                    <div class="result-item">
+                                        <strong>{{ company.name }}</strong>
+                                        <span>{{ company.description }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state">No users or companies matched your search. Try a different name or keyword.</div>
+                        {% endif %}
+                    </section>
+                {% else %}
+                    <section class="company-card">
+                        <h2 class="section-title">Featured companies</h2>
+                        <div class="company-list">
+                            {% for company in companies %}
+                                <div class="company-item">
+                                    <strong>{{ company.name }}</strong>
+                                    <span>{{ company.description }}</span>
+                                </div>
+                            {% endfor %}
+                            {% if not companies %}
+                                <div class="empty-state">No companies have been registered yet. Add your company to be visible to all users.</div>
+                            {% endif %}
+                        </div>
+                    </section>
+                {% endif %}
+            </div>
+
+            <aside>
+                <section class="people-card">
+                    <h2 class="section-title">Quick profile</h2>
+                    <div class="highlight-box">
+                        <strong>{{ user.full_name }}</strong>
+                        <span>{{ user.role }} at {{ user.company }}</span>
+                        <span>{{ user.email }}</span>
+                    </div>
+                </section>
+                <section class="insight-card">
+                    <h2 class="section-title">Network guide</h2>
+                    <p>Use the search bar to discover professionals and company pages. Register your company to join the public directory and let connections find your business.</p>
+                </section>
+            </aside>
+        </div>
+    </div>
+</body>
+</html>

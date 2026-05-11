@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile | LinkedIn</title>
+    <style>
+        :root {
+            --bg: #f7fafc;
+            --surface: #ffffff;
+            --accent: #0a66c2;
+            --muted: #546475;
+            --border: #d9e2ef;
+            --radius: 24px;
+            --shadow: 0 24px 60px rgba(12, 53, 111, 0.08);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #eef3f9 0%, #f8fbff 100%);
+            color: #10203f;
+        }
+        .page-shell {
+            width: min(900px, 100%);
+            margin: 0 auto;
+            padding: 24px;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 22px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 1.15rem;
+        }
+        .content {
+            display: grid;
+            gap: 24px;
+        }
+        .profile-card,
+        .details-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+            box-shadow: var(--shadow);
+        }
+        .profile-card {
+            display: grid;
+            gap: 18px;
+        }
+        .profile-avatar {
+            width: 84px;
+            height: 84px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            display: grid;
+            place-items: center;
+            font-size: 2rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .profile-name {
+            margin: 0;
+            font-size: 2rem;
+        }
+        .profile-role {
+            margin: 0;
+            color: var(--muted);
+            font-size: 1rem;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+        .detail-block {
+            padding: 22px;
+            border-radius: 20px;
+            background: #f8fbff;
+            border: 1px solid #e4ecf7;
+        }
+        .detail-block strong {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.96rem;
+            color: var(--text);
+        }
+        .detail-block span {
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+        .button-row {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+        .button-primary,
+        .button-secondary {
+            border: none;
+            border-radius: 999px;
+            padding: 14px 24px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .button-primary {
+            background: var(--accent);
+            color: white;
+        }
+        .button-secondary {
+            background: rgba(10, 102, 194, 0.08);
+            color: var(--accent);
+        }
+        @media (max-width: 720px) {
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+        <div class="topbar">
+            <div class="brand">
+                <div class="brand-dot"></div>
+                LinkedIn
+            </div>
+            <div class="button-row">
+                <a class="button-secondary" href="/dashboard">Back to home</a>
+                <a class="button-secondary" href="/logout">Log out</a>
+            </div>
+        </div>
+        <div class="content">
+            <section class="profile-card">
+                <div class="profile-avatar">{{ user.full_name.split(' ')[0][0] }}{{ user.full_name.split(' ')[-1][0] }}</div>
+                <div>
+                    <h1 class="profile-name">{{ user.full_name }}</h1>
+                    <p class="profile-role">{{ user.role }} at {{ user.company }}</p>
+                </div>
+            </section>
+            <section class="details-card">
+                <h2 class="section-title">Profile details</h2>
+                <div class="detail-grid">
+                    <div class="detail-block">
+                        <strong>Email</strong>
+                        <span>{{ user.email }}</span>
+                    </div>
+                    <div class="detail-block">
+                        <strong>Role</strong>
+                        <span>{{ user.role }}</span>
+                    </div>
+                    <div class="detail-block">
+                        <strong>Company</strong>
+                        <span>{{ user.company }}</span>
+                    </div>
+                    <div class="detail-block">
+                        <strong>People on your team</strong>
+                        <span>{{ team_count }}</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</body>
+</html>
